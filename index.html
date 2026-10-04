@@ -6,6 +6,8 @@
     <title id="page-title">متجر البراء</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- استدعاء مكتبة Supabase للربط السحابي -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
         body { font-family: 'Cairo', sans-serif; }
@@ -94,24 +96,40 @@
     </footer>
 
     <script>
+        // إعدادات الاتصال بـ Supabase
+        const SUPABASE_URL = 'https://aqfokdrpdxhnxqqgrcha.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxZm9rZHJwZHhoeG54cWdyY2hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3postIdOjE3OTEwODYwOTgsImV4cCI6MjEwNjY2MjA5OH0.VpZJxeKNI_SOTgC7Sp4hnfaNat1TSiJg8IfFUNtHfwM';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let products = [];
         let categories = [];
         let settings = { name: "متجر البراء", logo: "", phone: "0927772012" };
         let currentSelectedCategory = "الكل";
         let activeOrderDetails = null;
 
-        function loadStoreData() {
+        async function loadStoreData() {
             try {
-                products = JSON.parse(localStorage.getItem('albraa_store_products')) || [];
-                categories = JSON.parse(localStorage.getItem('albraa_store_categories')) || ["عطور", "إلكترونيات", "ملابس"];
-                settings = JSON.parse(localStorage.getItem('albraa_store_settings')) || { name: "متجر البراء", logo: "", phone: "0927772012" };
+                // جلب المنتجات من جدول products في Supabase
+                const { data: dbProducts, error: pError } = await supabaseClient.from('products').select('*');
+                if (!pError && dbProducts) {
+                    products = dbProducts;
+                }
+
+                // جلب الإعدادات إن وجدت
+                const { data: dbSettings, error: sError } = await supabaseClient.from('settings').select('*').limit(1);
+                if (!sError && dbSettings && dbSettings.length > 0) {
+                    settings = dbSettings[0];
+                }
+
+                // استخراج الفئات الفريدة من المنتجات
+                categories = ["الكل", ...new Set(products.map(p => p.category).filter(Boolean))];
             } catch (e) {
-                console.error("Error loading data from localStorage", e);
+                console.error("Error loading data from Supabase", e);
             }
         }
 
-        function initStore() {
-            loadStoreData();
+        async function initStore() {
+            await loadStoreData();
             
             document.getElementById('page-title').innerText = settings.name || "متجر البراء";
             document.getElementById('store-name-header').innerHTML = `<i class="fa-solid fa-store ml-2"></i>${settings.name || "متجر البراء"}`;
@@ -133,9 +151,8 @@
 
         function renderCategories() {
             const container = document.getElementById('categories-filter');
-            container.innerHTML = `<button onclick="filterByCategory('الكل')" class="px-5 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap ${currentSelectedCategory === 'الكل' ? 'bg-emerald-600 text-white shadow' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}">الكل</button>`;
+            container.innerHTML = '';
             categories.forEach(cat => {
-                if(cat === "الكل") return;
                 const isActive = currentSelectedCategory === cat;
                 container.innerHTML += `<button onclick="filterByCategory('${cat}')" class="px-5 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap ${isActive ? 'bg-emerald-600 text-white shadow' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}">${cat}</button>`;
             });
@@ -161,7 +178,7 @@
             const grid = document.getElementById('products-grid');
             grid.innerHTML = '';
             if(!list || list.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-16 text-slate-400 bg-white rounded-3xl border border-slate-100">لا توجد منتجات مضافة حالياً. قم بإضافة منتجات من لوحة التحكم.</div>`;
+                grid.innerHTML = `<div class="col-span-full text-center py-16 text-slate-400 bg-white rounded-3xl border border-slate-100">لا توجد منتجات مضافة حالياً.</div>`;
                 return;
             }
 
@@ -194,7 +211,7 @@
                             </div>
                             <div class="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
                                 <div>${priceHTML}</div>
-                                <button onclick="openProductModal(${p.id})" ${isDisabled ? 'disabled class="bg-slate-200 text-slate-400 cursor-not-allowed px-4 py-2 rounded-xl text-sm font-bold"' : 'class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm"'}>
+                                <button onclick="openProductModal('${p.id}')" ${isDisabled ? 'disabled class="bg-slate-200 text-slate-400 cursor-not-allowed px-4 py-2 rounded-xl text-sm font-bold"' : 'class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm"'}>
                                     ${isDisabled ? 'غير متاح' : 'اطلب الآن'}
                                 </button>
                             </div>
@@ -205,19 +222,22 @@
         }
 
         function openProductModal(id) {
-            const p = products.find(item => item.id === id);
+            const p = products.find(item => item.id == id);
             if(!p || p.status !== "متوفر") return;
 
             let originalPrice = parseFloat(p.price) || 0;
             let discountRate = parseFloat(p.discount) || 0;
             let finalUnitPrice = discountRate > 0 ? originalPrice - (originalPrice * discountRate / 100) : originalPrice;
 
-            let colorsHTML = p.colors && p.colors.length > 0 ? 
-                p.colors.map((c, idx) => `<label class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50"><input type="radio" name="selected-color" value="${c}" ${idx===0?'checked':''} class="hidden">${c}</label>`).join('') : 
+            let colors = Array.isArray(p.colors) ? p.colors : (typeof p.colors === 'string' ? p.colors.split(',') : []);
+            let sizes = Array.isArray(p.sizes) ? p.sizes : (typeof p.sizes === 'string' ? p.sizes.split(',') : []);
+
+            let colorsHTML = colors.length > 0 ? 
+                colors.map((c, idx) => `<label class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50"><input type="radio" name="selected-color" value="${c.trim()}" ${idx===0?'checked':''} class="hidden">${c.trim()}</label>`).join('') : 
                 `<span class="text-xs text-slate-400">لا توجد ألوان</span>`;
 
-            let sizesHTML = p.sizes && p.sizes.length > 0 ? 
-                p.sizes.map((s, idx) => `<label class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50"><input type="radio" name="selected-size" value="${s}" ${idx===0?'checked':''} class="hidden">${s}</label>`).join('') : 
+            let sizesHTML = sizes.length > 0 ? 
+                sizes.map((s, idx) => `<label class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50"><input type="radio" name="selected-size" value="${s.trim()}" ${idx===0?'checked':''} class="hidden">${s.trim()}</label>`).join('') : 
                 `<span class="text-xs text-slate-400">لا توجد مقاسات</span>`;
 
             document.getElementById('modal-product-content').innerHTML = `
@@ -312,7 +332,6 @@
         }
 
         window.onload = initStore;
-        window.addEventListener('storage', () => { initStore(); });
     </script>
 </body>
 </html>

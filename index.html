@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">متجر البراء</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- شريط التنقل العلوي -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <img id="store-logo" src="" alt="شعار المتجر" class="w-10 h-10 object-cover rounded-full border border-emerald-500 hidden">
+                <h1 id="store-name-header" class="text-2xl font-black text-emerald-600 flex items-center">
+                    <i class="fa-solid fa-store ml-2"></i>متجر البراء
+                </h1>
+            </div>
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <a href="https://wa.me/218927772012" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full font-bold text-sm flex items-center shadow transition">
+                    <i class="fa-brands fa-whatsapp text-lg ml-1"></i> 0927772012
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- قسم البحث والأقسام -->
+    <section class="max-w-7xl mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
+            <!-- شريط البحث -->
+            <div class="w-full md:w-1/2 relative">
+                <span class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="search-input" oninput="filterProducts()" placeholder="ابحث عن أي منتج..." class="w-full bg-white border border-slate-200 rounded-2xl pr-11 pl-4 py-3 text-slate-700 focus:outline-none focus:border-emerald-500 shadow-sm">
+            </div>
+            <!-- تصفية الأقسام -->
+            <div id="categories-filter" class="w-full md:w-auto flex overflow-x-auto pb-2 space-x-2 space-x-reverse">
+                <!-- الأقسام تُعبأ ديناميكياً -->
+            </div>
+        </div>
+
+        <!-- شبكة المنتجات -->
+        <h3 class="text-2xl font-bold text-slate-800 mb-6">المنتجات المتاحة</h3>
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+            <!-- المنتجات تُعرض هنا -->
+        </div>
+    </section>
+
+    <!-- نافذة تفاصيل المنتج والطلب المتقدم -->
+    <div id="product-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeProductModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modal-product-content">
+                <!-- محتوى تفاصيل المنتج ديناميكي -->
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إدخال بيانات الزبون وإرسال الطلب -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 shadow-2xl relative">
+            <button onclick="closeCheckoutModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-xl font-black text-slate-800 mb-1">تأكيد وإرسال الطلب</h3>
+            <p class="text-xs text-slate-500 mb-4">أدخل بيانات التوصيل بدقة ليصلك طلبك في أسرع وقت.</p>
+
+            <form id="order-form" onsubmit="submitOrder(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">الاسم الكامل</label>
+                    <input type="text" id="c-name" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-600 bg-slate-50" placeholder="أدخل اسمك الكريم">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">رقم الهاتف</label>
+                    <input type="tel" id="c-phone" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-600 bg-slate-50" placeholder="09xxxxxxxx">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">المدينة</label>
+                    <input type="text" id="c-city" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-600 bg-slate-50" placeholder="مثال: سرت">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">الحي السكني / العنوان بالتفصيل</label>
+                    <input type="text" id="c-district" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-600 bg-slate-50" placeholder="مثال: الحي التجاري، شارع الوحدة">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition shadow flex items-center justify-center">
+                    <i class="fa-brands fa-whatsapp text-lg ml-2"></i> إرسال الطلب عبر واتساب
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- تذييل الصفحة -->
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center mt-20">
+        <div class="max-w-7xl mx-auto px-4">
+            <h3 id="store-name-footer" class="text-white text-lg font-bold mb-2">متجر البراء</h3>
+            <p class="text-sm">جميع الحقوق محفوظة &copy; 2026 | خدمة العملاء: 0927772012</p>
+        </div>
+    </footer>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('albraa_store_products')) || [];
+        let categories = JSON.parse(localStorage.getItem('albraa_store_categories')) || ["الكل"];
+        let settings = JSON.parse(localStorage.getItem('albraa_store_settings')) || { name: "متجر البراء", logo: "" };
+
+        let currentSelectedCategory = "الكل";
+        let activeOrderDetails = null;
+
+        function initStore() {
+            document.getElementById('page-title').innerText = settings.name;
+            document.getElementById('store-name-header').innerHTML = `<i class="fa-solid fa-store ml-2"></i>${settings.name}`;
+            document.getElementById('store-name-footer').innerText = settings.name;
+
+            if(settings.logo) {
+                const logoEl = document.getElementById('store-logo');
+                logoEl.src = settings.logo;
+                logoEl.classList.remove('hidden');
+            }
+
+            renderCategories();
+            renderProducts(products);
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categories-filter');
+            container.innerHTML = `<button onclick="filterByCategory('الكل')" class="px-5 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap ${currentSelectedCategory === 'الكل' ? 'bg-emerald-600 text-white shadow' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}">الكل</button>`;
+            
+            categories.forEach(cat => {
+                if(cat === "الكل") return;
+                const isActive = currentSelectedCategory === cat;
+                container.innerHTML += `<button onclick="filterByCategory('${cat}')" class="px-5 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap ${isActive ? 'bg-emerald-600 text-white shadow' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}">${cat}</button>`;
+            });
+        }
+
+        function filterByCategory(cat) {
+            currentSelectedCategory = cat;
+            renderCategories();
+            filterProducts();
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            let filtered = products.filter(p => {
+                let matchesCat = (currentSelectedCategory === "الكل" || p.category === currentSelectedCategory);
+                let matchesSearch = p.name.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query);
+                return matchesCat && matchesSearch;
+            });
+            renderProducts(filtered);
+        }
+
+        function renderProducts(list) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+
+            if(list.length === 0) {
+                grid.innerHTML = `<div class="col-span-3 text-center py-16 text-slate-400">لا توجد منتجات مطابقة للبحث أو القسم المحدد.</div>`;
+                return;
+            }
+
+            list.forEach(p => {
+                let originalPrice = parseFloat(p.price) || 0;
+                let discountRate = parseFloat(p.discount) || 0;
+                let finalPrice = discountRate > 0 ? originalPrice - (originalPrice * discountRate / 100) : originalPrice;
+
+                let priceHTML = discountRate > 0 ? 
+                    `<div class="flex items-center space-x-2 space-x-reverse"><span class="text-xl font-black text-emerald-600">${finalPrice.toFixed(2)} د.ل</span><span class="text-xs text-rose-500 line-through">${originalPrice} د.ل</span></div>` :
+                    `<span class="text-xl font-black text-emerald-600">${originalPrice} د.ل</span>`;
+
+                let statusBadge = "";
+                let isDisabled = false;
+                if(p.status === "غير متوفر") {
+                    statusBadge = `<span class="bg-rose-100 text-rose-700 text-xs px-2.5 py-1 rounded-full font-bold">غير متوفر</span>`;
+                    isDisabled = true;
+                } else if(p.status === "نفذت الكمية") {
+                    statusBadge = `<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">نفذت الكمية</span>`;
+                    isDisabled = true;
+                } else {
+                    statusBadge = `<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">متوفر</span>`;
+                }
+
+                let discountBadge = discountRate > 0 ? `<span class="absolute top-3 right-3 bg-rose-500 text-white text-xs px-2.5 py-1 rounded-full font-black shadow">خصم ${discountRate}%</span>` : '';
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-3xl shadow-sm overflow-hidden hover:shadow-md transition border border-slate-100 flex flex-col relative">
+                        ${discountBadge}
+                        <div class="h-52 bg-slate-100 overflow-hidden relative">
+                            <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="text-lg font-bold text-slate-800">${p.name}</h4>
+                                    ${statusBadge}
+                                </div>
+                                <p class="text-slate-500 text-sm mb-4 line-clamp-2">${p.desc}</p>
+                            </div>
+                            <div class="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+                                <div>${priceHTML}</div>
+                                <button onclick="openProductModal(${p.id})" ${isDisabled ? 'disabled class="bg-slate-200 text-slate-400 cursor-not-allowed px-4 py-2 rounded-xl text-sm font-bold"' : 'class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm"'}>
+                                    ${isDisabled ? 'غير متاح للطلب' : 'اطلب الآن'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openProductModal(id) {
+            const p = products.find(item => item.id === id);
+            if(!p || p.status !== "متوفر") return;
+
+            let originalPrice = parseFloat(p.price) || 0;
+            let discountRate = parseFloat(p.discount) || 0;
+            let finalUnitPrice = discountRate > 0 ? originalPrice - (originalPrice * discountRate / 100) : originalPrice;
+
+            let colorsHTML = p.colors && p.colors.length > 0 ? 
+                p.colors.map((c, idx) => `<label class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50"><input type="radio" name="selected-color" value="${c}" ${idx===0?'checked':''} class="hidden">${c}</label>`).join('') : 
+                `<span class="text-xs text-slate-400">لا توجد ألوان محددة</span>`;
+
+            let sizesHTML = p.sizes && p.sizes.length > 0 ? 
+                p.sizes.map((s, idx) => `<label class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50"><input type="radio" name="selected-size" value="${s}" ${idx===0?'checked':''} class="hidden">${s}</label>`).join('') : 
+                `<span class="text-xs text-slate-400">لا توجد مقاسات محددة</span>`;
+
+            const modalContent = document.getElementById('modal-product-content');
+            modalContent.innerHTML = `
+                <div class="h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
+                    <img src="${p.image}" class="w-full h-full object-cover">
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-1">${p.name}</h3>
+                <p class="text-slate-500 text-xs mb-4">${p.desc}</p>
+                
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-2">اختر اللون:</label>
+                        <div class="grid grid-cols-3 gap-2">${colorsHTML}</div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-2">اختر المقاس:</label>
+                        <div class="grid grid-cols-3 gap-2">${sizesHTML}</div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-2">الكمية:</label>
+                        <input type="number" id="modal-qty" value="1" min="1" max="50" onchange="calculateTotal(${finalUnitPrice})" onkeyup="calculateTotal(${finalUnitPrice})" class="w-full border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-800 focus:outline-none focus:border-emerald-600">
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between mb-6">
+                    <div>
+                        <span class="text-xs text-slate-500 block">السعر الإجمالي المطلوب:</span>
+                        <span id="modal-total-price" class="text-2xl font-black text-emerald-600">${finalUnitPrice.toFixed(2)} د.ل</span>
+                    </div>
+                    <div class="text-left text-xs text-slate-400">السعر للقطعة: ${finalUnitPrice.toFixed(2)} د.ل</div>
+                </div>
+
+                <button onclick="proceedToCheckout('${p.name}', ${finalUnitPrice})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition shadow flex items-center justify-center">
+                    متابعة لتأكيد الطلب <i class="fa-solid fa-arrow-left mr-2"></i>
+                </button>
+            `;
+
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        function calculateTotal(unitPrice) {
+            let qty = parseInt(document.getElementById('modal-qty').value) || 1;
+            if(qty < 1) qty = 1;
+            let total = unitPrice * qty;
+            document.getElementById('modal-total-price').innerText = `${total.toFixed(2)} د.ل`;
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+        }
+
+        function proceedToCheckout(productName, unitPrice) {
+            let qty = parseInt(document.getElementById('modal-qty').value) || 1;
+            let colorEl = document.querySelector('input[name="selected-color"]:checked');
+            let sizeEl = document.querySelector('input[name="selected-size"]:checked');
+
+            activeOrderDetails = {
+                productName: productName,
+                unitPrice: unitPrice,
+                quantity: qty,
+                color: colorEl ? colorEl.value : "غير محدد",
+                size: sizeEl ? sizeEl.value : "غير محدد",
+                totalPrice: unitPrice * qty
+            };
+
+            closeProductModal();
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        function submitOrder(e) {
+            e.preventDefault();
+            if(!activeOrderDetails) return;
+
+            const name = document.getElementById('c-name').value;
+            const phone = document.getElementById('c-phone').value;
+            const city = document.getElementById('c-city').value;
+            const district = document.getElementById('c-district').value;
+
+            let message = `*طلب جديد عبر متجر البراء*\n\n` +
+                          `📦 *المنتج:* ${activeOrderDetails.productName}\n` +
+                          `🎨 *اللون:* ${activeOrderDetails.color}\n` +
+                          `📏 *المقاس:* ${activeOrderDetails.size}\n` +
+                          `🔢 *الكمية:* ${activeOrderDetails.quantity}\n` +
+                          `💰 *الإجمالي الكلي:* ${activeOrderDetails.totalPrice.toFixed(2)} د.ل\n\n` +
+                          `👤 *بيانات العميل الزبون:*\n` +
+                          `- الاسم: ${name}\n` +
+                          `- الهاتف: ${phone}\n` +
+                          `- المدينة: ${city}\n` +
+                          `- الحي السكني: ${district}\n\n` +
+                          `مرحباً، أرجو تأكيد وإرسال الطلب.`;
+
+            let whatsappURL = `https://wa.me/218927772012?text=${encodeURIComponent(message)}`;
+            
+            closeCheckoutModal();
+            window.open(whatsappURL, '_blank');
+        }
+
+        window.onload = initStore;
+    </script>
+</body>
+</html>

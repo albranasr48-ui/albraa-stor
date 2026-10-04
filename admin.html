@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم | متجر البراء</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+
+    <!-- رأس لوحة التحكم -->
+    <header class="bg-slate-800 border-b border-slate-700 py-4 px-6 flex justify-between items-center sticky top-0 z-40">
+        <h1 class="text-xl font-black text-amber-400 flex items-center">
+            <i class="fa-solid fa-sliders ml-2"></i> لوحة التحكم لمتجر البراء
+        </h1>
+        <a href="index.html" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center shadow">
+            <i class="fa-solid fa-eye ml-1"></i> عرض المتجر للزبون
+        </a>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-10">
+
+        <!-- القسم الأول: إضافة / تعديل منتج -->
+        <section class="bg-slate-800 p-6 md:p-8 rounded-3xl border border-slate-700 shadow-xl">
+            <h2 id="form-title" class="text-2xl font-bold mb-6 text-emerald-400 flex items-center justify-end">
+                إضافة منتج جديد <i class="fa-solid fa-circle-plus mr-2"></i>
+            </h2>
+            <form id="product-form" onsubmit="saveProduct(event)" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="hidden" id="edit-index" value="-1">
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">اسم المنتج</label>
+                    <input type="text" id="p-name" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-right">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">السعر الأساسي (د.ل)</label>
+                    <input type="number" step="0.01" id="p-price" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-right">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">القسم</label>
+                    <select id="p-category" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-right">
+                        <!-- الأقسام تُعبأ تلقائياً -->
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">حالة التوفر</label>
+                    <select id="p-status" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-right">
+                        <option value="متوفر">متوفر</option>
+                        <option value="غير متوفر">غير متوفر</option>
+                        <option value="نفذت الكمية">نفذت الكمية (لا يمكن للزبون طلبه)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">نسبة التخفيض (%) - اختيارية</label>
+                    <input type="number" id="p-discount" min="0" max="100" placeholder="مثال: 10" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-right">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">صورة المنتج (رفع ملف PNG / JPG)</label>
+                    <input type="file" id="p-image-file" accept="image/png, image/jpeg" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700">
+                </div>
+                
+                <!-- الألوان المتاحة (دعم إضافة أكثر من لون دفعة واحدة أو تدريجياً) -->
+                <div class="md:col-span-2 bg-slate-900/50 p-4 rounded-2xl border border-slate-700">
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">الألوان المتاحة (يمكنك إضافة لون مفرد أو عدة ألوان مفصولة بفواصل مثل: أحمر, أزرق)</label>
+                    <div class="flex gap-2 mb-3">
+                        <button type="button" onclick="addColor()" class="bg-slate-700 hover:bg-slate-600 px-5 py-2 rounded-xl text-sm font-bold">إضافة اللون</button>
+                        <input type="text" id="new-color-input" placeholder="اكتب اللون هنا..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 text-right">
+                    </div>
+                    <div id="colors-tags" class="flex flex-wrap gap-2 justify-end"></div>
+                </div>
+                
+                <!-- المقاسات المتاحة (دعم إضافة أكثر من مقاس دفعة واحدة أو تدريجياً) -->
+                <div class="md:col-span-2 bg-slate-900/50 p-4 rounded-2xl border border-slate-700">
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">المقاسات المتاحة (يمكنك إضافة مقاس مفرد أو عدة مقاسات مفصولة بفواصل مثل: L, XL, XXL)</label>
+                    <div class="flex gap-2 mb-3">
+                        <button type="button" onclick="addSize()" class="bg-slate-700 hover:bg-slate-600 px-5 py-2 rounded-xl text-sm font-bold">إضافة المقاس</button>
+                        <input type="text" id="new-size-input" placeholder="اكتب المقاس هنا..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 text-right">
+                    </div>
+                    <div id="sizes-tags" class="flex flex-wrap gap-2 justify-end"></div>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">وصف المنتج</label>
+                    <textarea id="p-desc" rows="3" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-right" placeholder="تفاصيل المنتج والمميزات..."></textarea>
+                </div>
+                
+                <div class="md:col-span-2 flex gap-4">
+                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition shadow">حفظ المنتج في المتجر</button>
+                    <button type="button" onclick="resetProductForm()" id="cancel-edit-btn" class="hidden bg-slate-700 hover:bg-slate-600 px-6 py-3.5 rounded-xl font-bold transition">إلغاء التعديل</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- القسم الثاني: قائمة المنتجات الحالية -->
+        <section class="bg-slate-800 p-6 md:p-8 rounded-3xl border border-slate-700 shadow-xl">
+            <h2 class="text-xl font-bold mb-4 text-emerald-400 text-right">
+                قائمة المنتجات الحالية <i class="fa-solid fa-boxes-stacked mr-2"></i>
+            </h2>
+            <div id="admin-products-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                <!-- المنتجات تُعرض هنا -->
+            </div>
+        </section>
+
+        <!-- قسمان جنباً إلى جنب: الأقسام وإعدادات المتجر -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- القسم الثالث: إدارة الأقسام -->
+            <section class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-bold mb-4 text-emerald-400 text-right">
+                        إدارة الأقسام <i class="fa-solid fa-folder-tree mr-2"></i>
+                    </h2>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="addCategory()" class="bg-emerald-600 hover:bg-emerald-700 px-5 py-2 rounded-xl text-sm font-bold">إضافة</button>
+                        <input type="text" id="new-category-name" placeholder="اسم القسم الجديد" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 text-right">
+                    </div>
+                    <div id="categories-list" class="space-y-2 max-h-56 overflow-y-auto"></div>
+                </div>
+            </section>
+
+            <!-- القسم الرابع: إعدادات المتجر (تغيير اسم المتجر والشعار) -->
+            <section class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-xl">
+                <h2 class="text-xl font-bold mb-4 text-emerald-400 text-right">
+                    إعدادات المتجر <i class="fa-solid fa-gears mr-2"></i>
+                </h2>
+                <form onsubmit="saveSettings(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-slate-300 text-right">تغيير اسم المتجر</label>
+                        <input type="text" id="store-name-input" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 text-right">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-slate-300 text-right">شعار المتجر (صورة PNG / JPG بديلة)</label>
+                        <input type="file" id="store-logo-file" accept="image/png, image/jpeg" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:text-white">
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-bold text-sm transition mt-2 shadow">حفظ إعدادات المتجر</button>
+                </form>
+            </section>
+
+        </div>
+
+    </main>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('albraa_store_products')) || [];
+        let categories = JSON.parse(localStorage.getItem('albraa_store_categories')) || ["عطور", "إلكترونيات", "ملابس"];
+        let settings = JSON.parse(localStorage.getItem('albraa_store_settings')) || { name: "متجر البراء", logo: "" };
+
+        let tempColors = [];
+        let tempSizes = [];
+
+        function initAdmin() {
+            renderCategoriesOptions();
+            renderCategoriesList();
+            renderAdminProducts();
+            document.getElementById('store-name-input').value = settings.name;
+        }
+
+        function renderCategoriesOptions() {
+            const select = document.getElementById('p-category');
+            select.innerHTML = '';
+            categories.forEach(cat => {
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        }
+
+        function renderCategoriesList() {
+            const list = document.getElementById('categories-list');
+            list.innerHTML = '';
+            categories.forEach(cat => {
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-900 p-3 rounded-xl border border-slate-700 text-sm">
+                        <button onclick="deleteCategory('${cat}')" class="text-rose-400 hover:text-rose-300 text-xs font-bold">حذف</button>
+                        <span>${cat}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function addCategory() {
+            const input = document.getElementById('new-category-name');
+            const name = input.value.trim();
+            if(name && !categories.includes(name)) {
+                categories.push(name);
+                localStorage.setItem('albraa_store_categories', JSON.stringify(categories));
+                input.value = '';
+                renderCategoriesOptions();
+                renderCategoriesList();
+            }
+        }
+
+        function deleteCategory(cat) {
+            if(confirm(`هل أنت متأكد من حذف القسم "${cat}"؟`)) {
+                categories = categories.filter(c => c !== cat);
+                localStorage.setItem('albraa_store_categories', JSON.stringify(categories));
+                renderCategoriesOptions();
+                renderCategoriesList();
+            }
+        }
+
+        // إضافة ألوان متعددة (تدعم الفواصل أو الإضافة الفردية المتكررة)
+        function addColor() {
+            const input = document.getElementById('new-color-input');
+            const val = input.value.trim();
+            if(val) {
+                // تقسيم القيم إذا أدخل المستخدم عدة ألوان مفصولة بفواصل
+                let items = val.split(',').map(i => i.trim()).filter(i => i.length > 0);
+                items.forEach(item => {
+                    if(!tempColors.includes(item)) {
+                        tempColors.push(item);
+                    }
+                });
+                input.value = '';
+                renderColorsTags();
+            }
+        }
+
+        function removeColor(color) {
+            tempColors = tempColors.filter(c => c !== color);
+            renderColorsTags();
+        }
+
+        function renderColorsTags() {
+            const container = document.getElementById('colors-tags');
+            container.innerHTML = tempColors.map(c => `
+                <span class="bg-emerald-900 text-emerald-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 border border-emerald-700">
+                    <button type="button" onclick="removeColor('${c}')" class="text-rose-400 font-bold hover:text-rose-200">&times;</button>
+                    ${c}
+                </span>
+            `).join('');
+        }
+
+        // إضافة مقاسات متعددة (تدعم الفواصل أو الإضافة الفردية المتكررة)
+        function addSize() {
+            const input = document.getElementById('new-size-input');
+            const val = input.value.trim();
+            if(val) {
+                let items = val.split(',').map(i => i.trim()).filter(i => i.length > 0);
+                items.forEach(item => {
+                    if(!tempSizes.includes(item)) {
+                        tempSizes.push(item);
+                    }
+                });
+                input.value = '';
+                renderSizesTags();
+            }
+        }
+
+        function removeSize(size) {
+            tempSizes = tempSizes.filter(s => s !== size);
+            renderSizesTags();
+        }
+
+        function renderSizesTags() {
+            const container = document.getElementById('sizes-tags');
+            container.innerHTML = tempSizes.map(s => `
+                <span class="bg-emerald-900 text-emerald-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 border border-emerald-700">
+                    <button type="button" onclick="removeSize('${s}')" class="text-rose-400 font-bold hover:text-rose-200">&times;</button>
+                    ${s}
+                </span>
+            `).join('');
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const editIdx = parseInt(document.getElementById('edit-index').value);
+            const name = document.getElementById('p-name').value;
+            const price = document.getElementById('p-price').value;
+            const category = document.getElementById('p-category').value;
+            const status = document.getElementById('p-status').value;
+            const discount = document.getElementById('p-discount').value;
+            const desc = document.getElementById('p-desc').value;
+            const fileInput = document.getElementById('p-image-file');
+
+            let saveAction = (imgData) => {
+                let productData = {
+                    id: editIdx > -1 ? products[editIdx].id : Date.now(),
+                    name, price, category, status, discount, desc,
+                    colors: [...tempColors],
+                    sizes: [...tempSizes],
+                    image: imgData || (editIdx > -1 ? products[editIdx].image : "")
+                };
+
+                if(editIdx > -1) {
+                    products[editIdx] = productData;
+                } else {
+                    products.push(productData);
+                }
+
+                localStorage.setItem('albraa_store_products', JSON.stringify(products));
+                resetProductForm();
+                renderAdminProducts();
+                alert('تم حفظ المنتج بنجاح وتحديث المتجر فوراً!');
+            };
+
+            if(fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(uploadEvent) {
+                    saveAction(uploadEvent.target.result);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                saveAction(editIdx > -1 ? products[editIdx].image : "");
+            }
+        }
+
+        function renderAdminProducts() {
+            const list = document.getElementById('admin-products-list');
+            list.innerHTML = '';
+
+            if(products.length === 0) {
+                list.innerHTML = `<div class="text-slate-400 text-sm text-center py-4">لا توجد منتجات مضافة حالياً.</div>`;
+                return;
+            }
+
+            products.forEach((p, index) => {
+                list.innerHTML += `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-900 p-4 rounded-2xl border border-slate-700 gap-3">
+                        <div class="flex gap-2 w-full sm:w-auto justify-end">
+                            <button onclick="editProduct(${index})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-400 hover:text-slate-900 px-3 py-1.5 rounded-xl text-xs font-bold transition">تعديل</button>
+                            <button onclick="deleteProduct(${index})" class="bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">حذف</button>
+                        </div>
+                        <div class="flex items-center space-x-3 space-x-reverse text-right">
+                            <div>
+                                <h4 class="font-bold text-white text-sm">${p.name}</h4>
+                                <span class="text-amber-400 text-xs">${p.price} د.ل | ${p.category} | الحالة: ${p.status}</span>
+                            </div>
+                            <img src="${p.image}" class="w-12 h-12 object-cover rounded-xl bg-slate-800">
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function editProduct(index) {
+            const p = products[index];
+            document.getElementById('edit-index').value = index;
+            document.getElementById('p-name').value = p.name;
+            document.getElementById('p-price').value = p.price;
+            document.getElementById('p-category').value = p.category;
+            document.getElementById('p-status').value = p.status;
+            document.getElementById('p-discount').value = p.discount || "";
+            document.getElementById('p-desc').value = p.desc;
+            
+            tempColors = [...(p.colors || [])];
+            tempSizes = [...(p.sizes || [])];
+            renderColorsTags();
+            renderSizesTags();
+
+            document.getElementById('form-title').innerHTML = `تعديل المنتج: ${p.name} <i class="fa-solid fa-pen-to-square mr-2"></i>`;
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetProductForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('edit-index').value = "-1";
+            tempColors = [];
+            tempSizes = [];
+            renderColorsTags();
+            renderSizesTags();
+            document.getElementById('form-title').innerHTML = `إضافة منتج جديد <i class="fa-solid fa-circle-plus mr-2"></i>`;
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        }
+
+        function deleteProduct(index) {
+            if(confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) {
+                products.splice(index, 1);
+                localStorage.setItem('albraa_store_products', JSON.stringify(products));
+                renderAdminProducts();
+            }
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            const name = document.getElementById('store-name-input').value;
+            const fileInput = document.getElementById('store-logo-file');
+
+            let finalizeSettings = (logoData) => {
+                settings = {
+                    name,
+                    logo: logoData || settings.logo
+                };
+                localStorage.setItem('albraa_store_settings', JSON.stringify(settings));
+                alert('تم حفظ إعدادات المتجر بنجاح!');
+            };
+
+            if(fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(evt) { finalizeSettings(evt.target.result); };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                finalizeSettings(settings.logo);
+            }
+        }
+
+        window.onload = initAdmin;
+    </script>
+</body>
+</html>

@@ -138,9 +138,9 @@
     </main>
 
     <script>
-        // إعدادات الاتصال بـ Supabase
+        // إعدادات الاتصال بـ Supabase (باستخدام المفتاح الجديد الصحيح)
         const SUPABASE_URL = 'https://aqfokdrpdxhnxqqgrcha.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxZm9rZHJwZHhoeG54cWdyY2hhIjsicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwODYwOTgsImV4cCI6MjEwNjY2MjA5OH0.VpZJxeKNI_SOTgC7Sp4hnfaNat1TSiJg8IfFUNtHfwM';
+        const SUPABASE_KEY = 'sb_publishable_c7pqgVERYX42JKqkRlEDNw_FihIV...'; // ضع مفتاحك الجديد كاملاً هنا
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let products = [];
@@ -287,14 +287,12 @@
             };
 
             if(editId) {
-                // تعديل منتج موجود
                 const { error } = await supabaseClient.from('products').update(productData).eq('id', editId);
                 if(error) {
                     alert('حدث خطأ أثناء التعديل: ' + error.message);
                     return;
                 }
             } else {
-                // إضافة منتج جديد
                 const { error } = await supabaseClient.from('products').insert([productData]);
                 if(error) {
                     alert('حدث خطأ أثناء الإضافة: ' + error.message);
@@ -390,7 +388,6 @@
 
             let settingsData = { id: 1, name, phone, logo };
 
-            // حفظ أو تحديث الإعدادات في جدول settings
             const { error } = await supabaseClient.from('settings').upsert([settingsData]);
             if(error) {
                 alert('خطأ في حفظ الإعدادات: ' + error.message);

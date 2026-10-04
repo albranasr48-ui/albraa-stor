@@ -6,6 +6,8 @@
     <title>لوحة التحكم - المتجر</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- استدعاء مكتبة Supabase للربط السحابي -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
         body { font-family: 'Cairo', sans-serif; }
@@ -29,7 +31,7 @@
                 إضافة منتج جديد <i class="fa-solid fa-circle-plus mr-2"></i>
             </h2>
             <form id="product-form" onsubmit="saveProduct(event)" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input type="hidden" id="edit-index" value="-1">
+                <input type="hidden" id="edit-id" value="">
                 <div>
                     <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">اسم المنتج</label>
                     <input type="text" id="p-name" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-right">
@@ -55,8 +57,8 @@
                     <input type="number" id="p-discount" min="0" max="100" placeholder="مثال: 15" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-right">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">صورة المنتج</label>
-                    <input type="file" id="p-image-file" accept="image/png, image/jpeg" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700">
+                    <label class="block text-sm font-semibold mb-2 text-slate-300 text-right">رابط صورة المنتج (أو اتركها فارغة)</label>
+                    <input type="text" id="p-image-url" placeholder="https://example.com/image.jpg" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500 text-right">
                 </div>
                 
                 <!-- الألوان -->
@@ -122,8 +124,12 @@
                         <input type="text" id="store-name-input" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 text-right">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold mb-1 text-slate-300 text-right">شعار المتجر</label>
-                        <input type="file" id="store-logo-file" accept="image/png, image/jpeg" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:text-white">
+                        <label class="block text-xs font-semibold mb-1 text-slate-300 text-right">رقم هاتف الواتساب (لطلبات الزبائن)</label>
+                        <input type="text" id="store-phone-input" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 text-right" placeholder="0927772012">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-slate-300 text-right">رابط شعار المتجر (Logo URL)</label>
+                        <input type="text" id="store-logo-input" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 text-right" placeholder="https://example.com/logo.png">
                     </div>
                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-bold text-sm transition mt-2 shadow">حفظ الإعدادات</button>
                 </form>
@@ -132,17 +138,50 @@
     </main>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('albraa_store_products')) || [];
-        let categories = JSON.parse(localStorage.getItem('albraa_store_categories')) || ["عطور", "إلكترونيات", "ملابس"];
-        let settings = JSON.parse(localStorage.getItem('albraa_store_settings')) || { name: "متجر البراء", logo: "" };
+        // إعدادات الاتصال بـ Supabase
+        const SUPABASE_URL = 'https://aqfokdrpdxhnxqqgrcha.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxZm9rZHJwZHhoeG54cWdyY2hhIjsicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwODYwOTgsImV4cCI6MjEwNjY2MjA5OH0.VpZJxeKNI_SOTgC7Sp4hnfaNat1TSiJg8IfFUNtHfwM';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let products = [];
+        let categories = ["عطور", "إلكترونيات", "ملابس"];
+        let settings = { name: "متجر البراء", logo: "", phone: "0927772012" };
         let tempColors = [];
         let tempSizes = [];
 
-        function initAdmin() {
+        async function initAdmin() {
+            await loadDataFromSupabase();
             renderCategoriesOptions();
             renderCategoriesList();
             renderAdminProducts();
-            document.getElementById('store-name-input').value = settings.name;
+            
+            document.getElementById('store-name-input').value = settings.name || "متجر البراء";
+            document.getElementById('store-phone-input').value = settings.phone || "0927772012";
+            document.getElementById('store-logo-input').value = settings.logo || "";
+        }
+
+        async function loadDataFromSupabase() {
+            try {
+                // جلب المنتجات
+                const { data: dbProducts, error: pError } = await supabaseClient.from('products').select('*');
+                if (!pError && dbProducts) {
+                    products = dbProducts;
+                }
+
+                // جلب الإعدادات
+                const { data: dbSettings, error: sError } = await supabaseClient.from('settings').select('*').limit(1);
+                if (!sError && dbSettings && dbSettings.length > 0) {
+                    settings = dbSettings[0];
+                }
+
+                // استخراج الأقسام من المنتجات أو الاعتماد على الافتراضية
+                let derivedCats = [...new Set(products.map(p => p.category).filter(Boolean))];
+                if(derivedCats.length > 0) {
+                    categories = derivedCats;
+                }
+            } catch (e) {
+                console.error("Error connecting to Supabase", e);
+            }
         }
 
         function renderCategoriesOptions() {
@@ -164,22 +203,21 @@
             });
         }
 
-        function addCategory() {
+        async function addCategory() {
             const input = document.getElementById('new-category-name');
             const name = input.value.trim();
             if(name && !categories.includes(name)) {
                 categories.push(name);
-                localStorage.setItem('albraa_store_categories', JSON.stringify(categories));
                 input.value = '';
                 renderCategoriesOptions();
                 renderCategoriesList();
+                alert('تمت إضافة القسم بنجاح (سيظهر عند إضافة أول منتج فيه)');
             }
         }
 
         function deleteCategory(cat) {
             if(confirm(`هل أنت متأكد من حذف القسم "${cat}"؟`)) {
                 categories = categories.filter(c => c !== cat);
-                localStorage.setItem('albraa_store_categories', JSON.stringify(categories));
                 renderCategoriesOptions();
                 renderCategoriesList();
             }
@@ -225,83 +263,93 @@
             `).join('');
         }
 
-        function saveProduct(e) {
+        async function saveProduct(e) {
             e.preventDefault();
-            const editIdx = parseInt(document.getElementById('edit-index').value);
+            const editId = document.getElementById('edit-id').value;
             const name = document.getElementById('p-name').value;
-            const price = document.getElementById('p-price').value;
+            const price = parseFloat(document.getElementById('p-price').value) || 0;
             const category = document.getElementById('p-category').value;
             const status = document.getElementById('p-status').value;
-            const discount = document.getElementById('p-discount').value;
+            const discount = parseFloat(document.getElementById('p-discount').value) || 0;
             const desc = document.getElementById('p-desc').value;
-            const fileInput = document.getElementById('p-image-file');
+            const imageUrl = document.getElementById('p-image-url').value.trim();
 
-            let saveAction = (imgData) => {
-                let productData = {
-                    id: editIdx > -1 ? products[editIdx].id : Date.now(),
-                    name, price, category, status, discount, desc,
-                    colors: [...tempColors],
-                    sizes: [...tempSizes],
-                    image: imgData || (editIdx > -1 ? products[editIdx].image : "")
-                };
-
-                if(editIdx > -1) products[editIdx] = productData;
-                else products.push(productData);
-
-                localStorage.setItem('albraa_store_products', JSON.stringify(products));
-                resetProductForm();
-                renderAdminProducts();
-                alert('تم حفظ المنتج بنجاح!');
+            let productData = {
+                name,
+                price,
+                category,
+                status,
+                discount,
+                desc,
+                colors: [...tempColors],
+                sizes: [...tempSizes],
+                image: imageUrl || 'https://via.placeholder.com/400'
             };
 
-            if(fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => saveAction(e.target.result);
-                reader.readAsDataURL(fileInput.files[0]);
+            if(editId) {
+                // تعديل منتج موجود
+                const { error } = await supabaseClient.from('products').update(productData).eq('id', editId);
+                if(error) {
+                    alert('حدث خطأ أثناء التعديل: ' + error.message);
+                    return;
+                }
             } else {
-                saveAction(editIdx > -1 ? products[editIdx].image : "");
+                // إضافة منتج جديد
+                const { error } = await supabaseClient.from('products').insert([productData]);
+                if(error) {
+                    alert('حدث خطأ أثناء الإضافة: ' + error.message);
+                    return;
+                }
             }
+
+            await loadDataFromSupabase();
+            resetProductForm();
+            renderAdminProducts();
+            alert('تم حفظ المنتج في السحابة بنجاح!');
         }
 
         function renderAdminProducts() {
             const list = document.getElementById('admin-products-list');
             list.innerHTML = '';
-            if(products.length === 0) {
+            if(!products || products.length === 0) {
                 list.innerHTML = `<div class="text-slate-400 text-sm text-center py-4">لا توجد منتجات مضافة حالياً.</div>`;
                 return;
             }
 
-            products.forEach((p, index) => {
+            products.forEach((p) => {
                 list.innerHTML += `
                     <div class="flex justify-between items-center bg-slate-900 p-4 rounded-2xl border border-slate-700 gap-3">
                         <div class="flex gap-2">
-                            <button onclick="editProduct(${index})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-400 hover:text-slate-900 px-3 py-1.5 rounded-xl text-xs font-bold transition">تعديل</button>
-                            <button onclick="deleteProduct(${index})" class="bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">حذف</button>
+                            <button onclick="editProduct('${p.id}')" class="bg-amber-500/20 hover:bg-amber-500 text-amber-400 hover:text-slate-900 px-3 py-1.5 rounded-xl text-xs font-bold transition">تعديل</button>
+                            <button onclick="deleteProduct('${p.id}')" class="bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">حذف</button>
                         </div>
                         <div class="flex items-center space-x-3 space-x-reverse text-right">
                             <div>
                                 <h4 class="font-bold text-white text-sm">${p.name}</h4>
                                 <span class="text-amber-400 text-xs">${p.price} د.ل | ${p.category} | ${p.status}</span>
                             </div>
-                            <img src="${p.image}" class="w-12 h-12 object-cover rounded-xl bg-slate-800">
+                            <img src="${p.image || 'https://via.placeholder.com/150'}" class="w-12 h-12 object-cover rounded-xl bg-slate-800">
                         </div>
                     </div>
                 `;
             });
         }
 
-        function editProduct(index) {
-            const p = products[index];
-            document.getElementById('edit-index').value = index;
+        function editProduct(id) {
+            const p = products.find(item => item.id == id);
+            if(!p) return;
+
+            document.getElementById('edit-id').value = p.id;
             document.getElementById('p-name').value = p.name;
             document.getElementById('p-price').value = p.price;
             document.getElementById('p-category').value = p.category;
             document.getElementById('p-status').value = p.status;
             document.getElementById('p-discount').value = p.discount || "";
             document.getElementById('p-desc').value = p.desc;
+            document.getElementById('p-image-url').value = p.image || "";
             
-            tempColors = [...(p.colors || [])];
-            tempSizes = [...(p.sizes || [])];
+            tempColors = Array.isArray(p.colors) ? [...p.colors] : (typeof p.colors === 'string' ? p.colors.split(',') : []);
+            tempSizes = Array.isArray(p.sizes) ? [...p.sizes] : (typeof p.sizes === 'string' ? p.sizes.split(',') : []);
             renderColorsTags();
             renderSizesTags();
 
@@ -312,7 +360,7 @@
 
         function resetProductForm() {
             document.getElementById('product-form').reset();
-            document.getElementById('edit-index').value = "-1";
+            document.getElementById('edit-id').value = "";
             tempColors = [];
             tempSizes = [];
             renderColorsTags();
@@ -321,32 +369,36 @@
             document.getElementById('cancel-edit-btn').classList.add('hidden');
         }
 
-        function deleteProduct(index) {
+        async function deleteProduct(id) {
             if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-                products.splice(index, 1);
-                localStorage.setItem('albraa_store_products', JSON.stringify(products));
+                const { error } = await supabaseClient.from('products').delete().eq('id', id);
+                if(error) {
+                    alert('خطأ في الحذف: ' + error.message);
+                    return;
+                }
+                await loadDataFromSupabase();
                 renderAdminProducts();
+                alert('تم حذف المنتج بنجاح');
             }
         }
 
-        function saveSettings(e) {
+        async function saveSettings(e) {
             e.preventDefault();
             const name = document.getElementById('store-name-input').value;
-            const fileInput = document.getElementById('store-logo-file');
+            const phone = document.getElementById('store-phone-input').value;
+            const logo = document.getElementById('store-logo-input').value;
 
-            let finalize = logoData => {
-                settings = { name, logo: logoData || settings.logo };
-                localStorage.setItem('albraa_store_settings', JSON.stringify(settings));
-                alert('تم حفظ إعدادات المتجر بنجاح!');
-            };
+            let settingsData = { id: 1, name, phone, logo };
 
-            if(fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = evt => finalize(evt.target.result);
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                finalize(settings.logo);
+            // حفظ أو تحديث الإعدادات في جدول settings
+            const { error } = await supabaseClient.from('settings').upsert([settingsData]);
+            if(error) {
+                alert('خطأ في حفظ الإعدادات: ' + error.message);
+                return;
             }
+
+            settings = settingsData;
+            alert('تم حفظ إعدادات المتجر في السحابة بنجاح!');
         }
 
         window.onload = initAdmin;

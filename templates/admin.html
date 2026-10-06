@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - إدارة المتجر</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Cairo', sans-serif; }</style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto space-y-8">
+        
+        <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm">
+            <h1 class="text-2xl font-black text-indigo-600">لوحة تحكم المتجر (MySQL)</h1>
+            <a href="/" target="_blank" class="bg-gray-800 text-white px-4 py-2 rounded-xl font-bold hover:bg-black transition">عرض المتجر للزوار <i class="fa-solid fa-external-link-alt mr-1"></i></a>
+        </div>
+
+        <!-- إعدادات المتجر -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 class="text-lg font-bold mb-4">إعدادات المتجر العامة</h2>
+            <form method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="hidden" name="action" value="update_settings">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">اسم المتجر</label>
+                    <input type="text" name="store_name" value="{{ settings.store_name }}" class="w-full border rounded-xl px-3 py-2" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">رقم هاتف الواتساب</label>
+                    <input type="text" name="store_phone" value="{{ settings.store_phone }}" class="w-full border rounded-xl px-3 py-2" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">رابط الشعار (Logo URL)</label>
+                    <input type="text" name="store_logo" value="{{ settings.store_logo or '' }}" class="w-full border rounded-xl px-3 py-2">
+                </div>
+                <div class="md:col-span-3">
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700">حفظ الإعدادات</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- إضافة قسم جديد -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 class="text-lg font-bold mb-4">إضافة تصنيف (قسم) جديد</h2>
+            <form method="POST" class="flex gap-4">
+                <input type="hidden" name="action" value="add_category">
+                <input type="text" name="category_name" placeholder="اسم القسم الجديد" class="flex-1 border rounded-xl px-3 py-2" required>
+                <button type="submit" class="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-emerald-700">إضافة القسم</button>
+            </form>
+        </div>
+
+        <!-- إضافة منتج جديد -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 class="text-lg font-bold mb-4">إضافة منتج جديد</h2>
+            <form method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="hidden" name="action" value="add_product">
+                <div><label class="block text-sm font-semibold mb-1">اسم المنتج</label><input type="text" name="name" class="w-full border rounded-xl px-3 py-2" required></div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">القسم</label>
+                    <select name="category_id" class="w-full border rounded-xl px-3 py-2 bg-white">
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div><label class="block text-sm font-semibold mb-1">السعر (د.ل)</label><input type="number" step="0.01" name="price" class="w-full border rounded-xl px-3 py-2" required></div>
+                <div><label class="block text-sm font-semibold mb-1">نسبة الخصم (%)</label><input type="number" name="discount" value="0" class="w-full border rounded-xl px-3 py-2"></div>
+                <div><label class="block text-sm font-semibold mb-1">رابط صورة المنتج</label><input type="text" name="image" class="w-full border rounded-xl px-3 py-2"></div>
+                <div><label class="block text-sm font-semibold mb-1">الألوان (مفصولة بفواصل)</label><input type="text" name="colors" placeholder="أحمر, أزرق, أسود" class="w-full border rounded-xl px-3 py-2"></div>
+                <div><label class="block text-sm font-semibold mb-1">المقاسات (مفصولة بفواصل)</label><input type="text" name="sizes" placeholder="S, M, L, XL" class="w-full border rounded-xl px-3 py-2"></div>
+                <div class="md:col-span-2"><label class="block text-sm font-semibold mb-1">الوصف</label><input type="text" name="description" class="w-full border rounded-xl px-3 py-2"></div>
+                <div class="md:col-span-3">
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700">إضافة المنتج للمتجر</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- قائمة المنتجات الحالية -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 class="text-lg font-bold mb-4">المنتجات الحالية في قاعدة البيانات</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b">
+                            <th class="p-3">المنتج</th>
+                            <th class="p-3">القسم</th>
+                            <th class="p-3">السعر</th>
+                            <th class="p-3">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in products %}
+                        <tr class="border-b">
+                            <td class="p-3 font-bold">{{ p.name }}</td>
+                            <td class="p-3 text-gray-500">{{ p.category_name }}</td>
+                            <td class="p-3 text-indigo-600 font-bold">{{ p.price }} د.ل</td>
+                            <td class="p-3">
+                                <form method="POST" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
+                                    <input type="hidden" name="action" value="delete_product">
+                                    <input type="hidden" name="product_id" value="{{ p.id }}">
+                                    <button type="submit" class="text-red-500 hover:text-red-700 font-bold cursor-pointer"><i class="fa-solid fa-trash"></i> حذف</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

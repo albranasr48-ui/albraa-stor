@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">متجر إلكتروني</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- الهيدر وشريط البحث -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <img id="store-logo" src="" alt="شعار المتجر" class="w-12 h-12 object-contain rounded-full border hidden">
+                <h1 id="store-name" class="text-xl font-bold text-gray-900">متجري الإلكتروني</h1>
+            </div>
+            
+            <!-- شريط البحث -->
+            <div class="w-full md:w-96 relative">
+                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="search-input" placeholder="ابحث عن منتج..." class="w-full pr-10 pl-4 py-2 bg-gray-100 border border-transparent rounded-xl focus:bg-white focus:border-indigo-500 focus:outline-none transition">
+            </div>
+
+            <!-- زر السلة -->
+            <button onclick="toggleCartModal()" class="relative bg-indigo-600 text-white px-5 py-2 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition shadow-md">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>السلة</span>
+                <span id="cart-badge" class="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+        
+        <!-- قسم الأقسام (التصنيفات) -->
+        <section class="mb-8">
+            <h2 class="text-lg font-bold text-gray-700 mb-3">الأقسام</h2>
+            <div id="categories-container" class="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                <!-- يتم تعبئتها ديناميكياً -->
+            </div>
+        </section>
+
+        <!-- قسم المنتجات -->
+        <section>
+            <h2 id="current-category-title" class="text-xl font-bold text-gray-900 mb-4">جميع المنتجات</h2>
+            <div id="products-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- يتم تعبئتها ديناميكياً -->
+            </div>
+        </section>
+    </main>
+
+    <!-- نافذة السلة وفاتورة الطلب -->
+    <div id="cart-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 bg-gray-100 flex justify-between items-center border-b">
+                <h3 class="font-bold text-lg text-gray-800"><i class="fa-solid fa-file-invoice text-indigo-600 ml-2"></i> فاتورة السلة</h3>
+                <button onclick="toggleCartModal()" class="text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-grow" id="cart-items-container">
+                <!-- عناصر السلة -->
+            </div>
+
+            <div class="p-4 bg-gray-50 border-t">
+                <div class="flex justify-between items-center mb-4 text-lg font-bold">
+                    <span>الإجمالي الكلي:</span>
+                    <span id="cart-total-price" class="text-indigo-600">0 د.ل</span>
+                </div>
+                <button onclick="openCheckoutModal()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-md">
+                    تأكيد الطلب
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إتمام الطلب وعنوان التوصيل -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-gray-800">بيانات التوصيل</h3>
+                <button onclick="closeCheckoutModal()" class="text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
+            </div>
+            <form id="checkout-form" onsubmit="submitOrder(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">الاسم الكامل</label>
+                    <input type="text" id="client-name" required class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">رقم الهاتف</label>
+                    <input type="tel" id="client-phone" required class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">المدينة</label>
+                    <input type="text" id="client-city" required class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">الحي / الشارع</label>
+                    <input type="text" id="client-district" required class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-xl"></i> إرسال الطلب عبر الواتساب
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t py-4 text-center text-sm text-gray-500 mt-auto">
+        جميع الحقوق محفوظة &copy; <span id="footer-store-name">متجري</span>
+    </footer>
+
+    <!-- سكود البرمجة والربط -->
+    <script>
+        let db = {
+            settings: { name: "متجري الإلكتروني", phone: "0927772012", logo: "" },
+            categories: [
+                { id: "all", name: "الكل" },
+                { id: "1", name: "إلكترونيات" },
+                { id: "2", name: "ملابس" }
+            ],
+            products: [
+                { id: 101, name: "ساعة ذكية متطورة", category: "1", price: 150, discount: 10, image: "", status: "available", colors: ["أسود", "فضي"], sizes: ["سير واحد"] },
+                { id: 102, name: "قميص رجالي أنيق", category: "2", price: 75, discount: 0, image: "", status: "available", colors: ["أبيض", "أزرق"], sizes: ["L", "XL"] }
+            ],
+            cart: []
+        };
+
+        let selectedCategory = "all";
+        let searchQuery = "";
+
+        function loadData() {
+            const saved = localStorage.getItem('store_db');
+            if (saved) {
+                try { db = JSON.parse(saved); } catch (e) {}
+            }
+            if (!db.settings.phone) db.settings.phone = "0927772012";
+            render();
+        }
+
+        function saveData() {
+            localStorage.setItem('store_db', JSON.stringify(db));
+        }
+
+        // الاستماع للتحديثات الفورية من لوحة التحكم
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'store_db') {
+                loadData();
+            }
+        });
+
+        // تشغيل دوري للتأكد من التزامن الفوري على نفس المتصفح
+        setInterval(() => {
+            const saved = localStorage.getItem('store_db');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (JSON.stringify(parsed) !== JSON.stringify(db)) {
+                    db = parsed;
+                    render();
+                }
+            }
+        }, 1000);
+
+        function render() {
+            // إعدادات المتجر
+            document.getElementById('store-name').innerText = db.settings.name || "متجري الإلكتروني";
+            document.getElementById('page-title').innerText = db.settings.name || "متجري الإلكتروني";
+            document.getElementById('footer-store-name').innerText = db.settings.name || "متجري الإلكتروني";
+            
+            const logoEl = document.getElementById('store-logo');
+            if (db.settings.logo) {
+                logoEl.src = db.settings.logo;
+                logoEl.classList.remove('hidden');
+            } else {
+                logoEl.classList.add('hidden');
+            }
+
+            // عرض الأقسام
+            const catContainer = document.getElementById('categories-container');
+            let catHtml = `<button onclick="filterCategory('all')" class="px-4 py-2 rounded-xl font-bold transition whitespace-nowrap ${selectedCategory === 'all' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-gray-600 border hover:bg-gray-100'}">الكل</button>`;
+            
+            (db.categories || []).forEach(cat => {
+                if (cat.id === 'all') return;
+                const active = selectedCategory === cat.id;
+                catHtml += `<button onclick="filterCategory('${cat.id}')" class="px-4 py-2 rounded-xl font-bold transition whitespace-nowrap ${active ? 'bg-indigo-600 text-white shadow' : 'bg-white text-gray-600 border hover:bg-gray-100'}">${cat.name}</button>`;
+            });
+            catContainer.innerHTML = catHtml;
+
+            // تصفية وعرض المنتجات
+            const prodContainer = document.getElementById('products-container');
+            const query = searchQuery.trim().toLowerCase();
+            
+            const filtered = (db.products || []).filter(p => {
+                if (p.status === 'unavailable') return false;
+                const matchCat = (selectedCategory === 'all' || p.category === selectedCategory);
+                const matchSearch = p.name.toLowerCase().includes(query) || (p.description && p.description.toLowerCase().includes(query));
+                return matchCat && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                prodContainer.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 font-semibold">لا توجد منتجات مطابقة</div>`;
+            } else {
+                let prodHtml = '';
+                filtered.forEach(p => {
+                    const finalPrice = p.discount > 0 ? p.price - (p.price * p.discount / 100) : p.price;
+                    const imgTag = p.image ? `<img src="${p.image}" class="w-full h-48 object-cover rounded-xl mb-3">` : `<div class="w-full h-48 bg-gray-200 rounded-xl mb-3 flex items-center justify-center text-gray-400"><i class="fa-solid fa-image text-3xl"></i></div>`;
+                    
+                    prodHtml += `
+                        <div class="bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                            <div>
+                                ${imgTag}
+                                <h3 class="font-bold text-gray-900 text-lg mb-1">${p.name}</h3>
+                                <p class="text-gray-500 text-sm mb-3 line-clamp-2">${p.description || ''}</p>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="text-indigo-600 font-bold text-lg">${finalPrice} د.ل</span>
+                                    ${p.discount > 0 ? `<span class="text-gray-400 line-through text-sm">${p.price} د.ل</span> <span class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full font-bold">خصم ${p.discount}%</span>` : ''}
+                                </div>
+                                <button onclick="openProductModal(${p.id})" class="w-full bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white font-bold py-2 rounded-xl transition">
+                                    أضف للسلة
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                prodContainer.innerHTML = prodHtml;
+            }
+
+            updateCartBadge();
+        }
+
+        function filterCategory(catId) {
+            selectedCategory = catId;
+            render();
+        }
+
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            render();
+        });
+
+        // نافذة اختيار المواصفات (لون / مقاس / كمية) وإضافة للسلة
+        function openProductModal(prodId) {
+            const product = db.products.find(p => p.id === prodId);
+            if (!product) return;
+
+            let colorsHtml = '';
+            if (product.colors && product.colors.length > 0) {
+                colorsHtml = `
+                    <div class="mb-3">
+                        <label class="block text-sm font-semibold mb-1">اختر اللون:</label>
+                        <select id="modal-color" class="w-full border rounded-xl px-3 py-2">
+                            ${product.colors.map(c => `<option value="${c}">${c}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
+            let sizesHtml = '';
+            if (product.sizes && product.sizes.length > 0) {
+                sizesHtml = `
+                    <div class="mb-3">
+                        <label class="block text-sm font-semibold mb-1">اختر المقاس:</label>
+                        <select id="modal-size" class="w-full border rounded-xl px-3 py-2">
+                            ${product.sizes.map(s => `<option value="${s}">${s}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
+            // نافذة منبثقة بسيطة لاختيار الكمية والخصائص
+            const modalDiv = document.createElement('div');
+            modalDiv.id = 'temp-prod-modal';
+            modalDiv.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+            modalDiv.innerHTML = `
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+                    <h3 class="font-bold text-lg mb-2">${product.name}</h3>
+                    <p class="text-indigo-600 font-bold mb-4">${product.discount > 0 ? product.price - (product.price * product.discount / 100) : product.price} د.ل</p>
+                    ${colorsHtml}
+                    ${sizesHtml}
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1">الكمية:</label>
+                        <input type="number" id="modal-qty" value="1" min="1" class="w-full border rounded-xl px-3 py-2 text-center font-bold">
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="confirmAddToCart(${product.id})" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700">تأكيد الإضافة</button>
+                        <button onclick="document.getElementById('temp-prod-modal').remove()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-bold">إلغاء</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalDiv);
+        }
+
+        function confirmAddToCart(prodId) {
+            const product = db.products.find(p => p.id === prodId);
+            const qty = parseInt(document.getElementById('modal-qty').value) || 1;
+            const color = document.getElementById('modal-color') ? document.getElementById('modal-color').value : '';
+            const size = document.getElementById('modal-size') ? document.getElementById('modal-size').value : '';
+
+            const finalPrice = product.discount > 0 ? product.price - (product.price * product.discount / 100) : product.price;
+
+            db.cart.push({
+                cartId: Date.now() + Math.random(),
+                id: product.id,
+                name: product.name,
+                price: finalPrice,
+                qty: qty,
+                color: color,
+                size: size
+            });
+
+            saveData();
+            document.getElementById('temp-prod-modal').remove();
+            render();
+            toggleCartModal();
+        }
+
+        function toggleCartModal() {
+            const modal = document.getElementById('cart-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                renderCartItems();
+            }
+        }
+
+        function renderCartItems() {
+            const container = document.getElementById('cart-items-container');
+            if (!db.cart || db.cart.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-400 font-semibold">السلة فارغة</div>`;
+                document.getElementById('cart-total-price').innerText = '0 د.ل';
+                return;
+            }
+
+            let html = '';
+            let total = 0;
+            db.cart.forEach((item, index) => {
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                html += `
+                    <div class="flex items-center justify-between border-b py-3 gap-2">
+                        <div>
+                            <h4 class="font-bold text-gray-800">${item.name}</h4>
+                            <div class="text-xs text-gray-500">
+                                ${item.color ? `لون: ${item.color} | ` : ''}
+                                ${item.size ? `مقاس: ${item.size}` : ''}
+                            </div>
+                            <div class="text-indigo-600 font-bold text-sm mt-1">${item.price} د.ل × ${item.qty} = ${itemTotal} د.ل</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeQty(${index}, 1)" class="w-8 h-8 bg-gray-100 rounded-lg font-bold hover:bg-gray-200">+</button>
+                            <span class="font-bold w-6 text-center">${item.qty}</span>
+                            <button onclick="changeQty(${index}, -1)" class="w-8 h-8 bg-gray-100 rounded-lg font-bold hover:bg-gray-200">-</button>
+                            <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700 px-2"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            document.getElementById('cart-total-price').innerText = total + ' د.ل';
+        }
+
+        function changeQty(index, delta) {
+            db.cart[index].qty += delta;
+            if (db.cart[index].qty <= 0) {
+                db.cart.splice(index, 1);
+            }
+            saveData();
+            renderCartItems();
+            updateCartBadge();
+        }
+
+        function removeFromCart(index) {
+            db.cart.splice(index, 1);
+            saveData();
+            renderCartItems();
+            updateCartBadge();
+        }
+
+        function updateCartBadge() {
+            const count = (db.cart || []).reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('cart-badge').innerText = count;
+        }
+
+        function openCheckoutModal() {
+            if (!db.cart || db.cart.length === 0) {
+                alert('السلة فارغة!');
+                return;
+            }
+            toggleCartModal();
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        function submitOrder(e) {
+            e.preventDefault();
+            const name = document.getElementById('client-name').value;
+            const phone = document.getElementById('client-phone').value;
+            const city = document.getElementById('client-city').value;
+            const district = document.getElementById('client-district').value;
+
+            let invoiceText = `🛒 *طلب شراء جديد* 🛒\n\n`;
+            invoiceText += `👤 *الاسم:* ${name}\n`;
+            invoiceText += `📞 *الهاتف:* ${phone}\n`;
+            invoiceText += `📍 *العنوان:* ${city} - ${district}\n\n`;
+            invoiceText += `📦 *المنتجات المطلوبة:*\n`;
+
+            let total = 0;
+            db.cart.forEach((item, idx) => {
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                invoiceText += `${idx + 1}. ${item.name} (${item.qty} × ${item.price} د.ل)`;
+                if (item.color) invoiceText += ` [لون: ${item.color}]`;
+                if (item.size) invoiceText += ` [مقاس: ${item.size}]`;
+                invoiceText += ` = ${itemTotal} د.ل\n`;
+            });
+
+            invoiceText += `\n💰 *الإجمالي الكلي:* ${total} د.ل`;
+
+            const storePhone = db.settings.phone || "0927772012";
+            // تنظيف رقم الهاتف وتنسيقه للواتساب
+            let formattedPhone = storePhone.trim();
+            if (formattedPhone.startsWith('0')) {
+                formattedPhone = '218' + formattedPhone.substring(1);
+            }
+
+            const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(invoiceText)}`;
+            
+            // تفريغ السلة بعد الطلب
+            db.cart = [];
+            saveData();
+            render();
+            closeCheckoutModal();
+
+            window.open(whatsappUrl, '_blank');
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>

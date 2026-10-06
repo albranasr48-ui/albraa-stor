@@ -11,7 +11,7 @@
         body { font-family: 'Cairo', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col md:flex-row">
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col md:flex-row" onload="loadData()">
 
     <!-- الأقسام الجانبية (يمين) -->
     <aside class="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col justify-between shadow-lg">
@@ -305,7 +305,6 @@
 
         // --- إدارة المنتجات ---
         function openProductModal(prodId = null) {
-            // تعبئة اختيار الأقسام
             const catSelect = document.getElementById('prod-category');
             catSelect.innerHTML = db.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
@@ -356,6 +355,10 @@
                 };
                 reader.readAsDataURL(file);
             }
+        }
+
+        function editProduct(prodId) {
+            openProductModal(prodId);
         }
 
         function addColor() {
@@ -520,11 +523,9 @@
             db.settings.phone = document.getElementById('setting-store-phone').value;
             db.settings.logo = tempLogoBase64;
             saveData();
-            alert('تم حفظ الإعدادات بنجاح ومزامنتها مع المتجر.');
+            alert('تم حفظ إعدادات المتجر بنجاح!');
             renderAdmin();
         }
-
-        window.onload = loadData;
     </script>
 </body>
 </html>
